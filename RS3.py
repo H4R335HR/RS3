@@ -3,10 +3,11 @@ from re import search,escape,sub	#TODO Dump all you don't need
 from urllib.parse import urlencode
 from charset_normalizer import detect
 from html import unescape
-import time, S3, _thread, urllib.request, sys, threading
+import os, time, S3, _thread, urllib.request, sys, threading
 
-PATTERN_FILE="/home/evol/.local/share/rhythmbox/plugins/RS3/patterns"		#TODO Change path
-RULE_FILE="/home/evol/.local/share/rhythmbox/plugins/RS3/rules"
+_PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
+PATTERN_FILE = os.path.join(_PLUGIN_DIR, "patterns")
+RULE_FILE = os.path.join(_PLUGIN_DIR, "rules")
 HEADERS={'User-Agent':'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'}
 DECODER={'a':'artist','b':'album','t':'title','n':'track'}
 DEBUG=0
