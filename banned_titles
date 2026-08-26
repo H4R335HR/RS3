@@ -1,0 +1,37 @@
+# RS3 Banned Titles
+# -----------------
+# Titles matching any line here will be skipped entirely — no splitting,
+# no Last.fm lookup, no Shazam API call.
+#
+# FORMAT:
+#   - One entry per line.
+#   - Blank lines and lines starting with # are ignored.
+#   - Prefix a line with "re:" to treat it as a Python regex (case-insensitive).
+#   - Everything else is matched as a case-insensitive substring.
+#
+# EXAMPLES:
+#   AD BREAK                         ← skips any title containing "AD BREAK"
+#   re:^ADVERT\b                     ← skips titles starting with "ADVERT"
+#   re:CONTINUE\s+TO\s+PLAY          ← skips "CONTINUE TO PLAY" with any spacing
+#
+# Add your station-specific banners below. When a new station throws
+# a weird ad title at you, just add a line here — no code changes needed.
+# The file is re-read on every title change, so edits are picked up live.
+# ---------------------------------------------------------------------------
+
+# Generic ad/break patterns
+AD BREAK
+ADVERT
+re:(?:THIS\s+)?STATION\s+WILL\s+CONTINUE\s+TO\s+PLAY
+re:^COMMERCIAL\s+BREAK
+re:^BREAK\s*$
+SPONSOR
+re:^PROMO\b
+re:^PSA\b
+re:^ID/PSA$
+
+# Station-name / branding noise (no artist - title split)
+Broadcasting LIVE
+SomaFM ID
+re:^Radio\s+Gorzow$
+bedroom-dj.co.uk

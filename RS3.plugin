@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=RS3
+IAge=2
+Name=Radioscrobbler3
+Description=A plugin to scrobble tracks from internet radio to last fm
+Authors=harris4got <harris4got@users.sourceforge.net>
+Copyright=Copyright © 2012 harris4got
+Website=http://radioscrobbler.sourceforge.net/

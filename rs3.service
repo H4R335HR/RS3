@@ -1,0 +1,15 @@
+[Unit]
+Description=RadioScrobbler3 - Internet Radio Scrobbler for Last.fm
+Documentation=http://radioscrobbler.sourceforge.net/
+After=dbus.service
+Wants=dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.config/rs3/rs3_daemon.py
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
