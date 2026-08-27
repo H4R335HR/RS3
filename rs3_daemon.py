@@ -356,34 +356,43 @@ class RS3Daemon:
         # Determine station name
         station_name = artist or album or title
 
+        # Build the stream title the core expects ("Artist - Title" format).
+        # Radio stations send a combined string in xesam:title (e.g.
+        # "Artist - Song"). Apps like SongRec send separate xesam:artist and
+        # xesam:title fields — combine them so the core can split them.
+        if artist and title and ' - ' not in title:
+            stream_title = '%s - %s' % (artist, title)
+        else:
+            stream_title = title
+
         # Skip local files
         if url.startswith('file://'):
             return
 
         # Determine what changed
         url_changed = (url != self._prev_url) and url
-        title_changed = (title != self._prev_title) and title
+        title_changed = (stream_title != self._prev_title) and stream_title
 
         if url_changed:
             self._prev_url = url
-            self._prev_title = title
+            self._prev_title = stream_title
             self._station_name = station_name
             print(bcolors.HEADER + "♫ Station: %s" % station_name + bcolors.ENDC)
             print(bcolors.GREY + "  URL: %s" % url + bcolors.ENDC)
-            print(bcolors.GREY + "  Stream title: %s" % title + bcolors.ENDC)
+            print(bcolors.GREY + "  Stream title: %s" % stream_title + bcolors.ENDC)
             self.core.on_station_changed(url, station_name)
             # Only pass title to core if it's an actual track, not just the
             # station name echoed back as the initial stream title.
-            if title and not self._is_station_name(title):
-                self.core.on_title_changed(title)
+            if stream_title and not self._is_station_name(stream_title):
+                self.core.on_title_changed(stream_title)
         elif title_changed:
-            self._prev_title = title
+            self._prev_title = stream_title
             # Skip title updates that are just the station/radio name
-            if self._is_station_name(title):
-                print(bcolors.GREY + "♫ Skipping station-name title: %s" % title + bcolors.ENDC)
+            if self._is_station_name(stream_title):
+                print(bcolors.GREY + "♫ Skipping station-name title: %s" % stream_title + bcolors.ENDC)
                 return
-            print(bcolors.HEADER + "♫ Title update: %s" % title + bcolors.ENDC)
-            self.core.on_title_changed(title)
+            print(bcolors.HEADER + "♫ Title update: %s" % stream_title + bcolors.ENDC)
+            self.core.on_title_changed(stream_title)
 
     def _is_station_name(self, title):
         """
