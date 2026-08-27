@@ -59,7 +59,11 @@ class RS3Daemon:
 
         # Read config for player preference
         import S3
-        self.target_player = S3.config.get('daemon', 'player', fallback='auto')
+        raw = S3.config.get('daemon', 'player', fallback='auto').strip()
+        if raw == 'auto':
+            self.player_priorities = None  # None = accept any
+        else:
+            self.player_priorities = [p.strip() for p in raw.split(',') if p.strip()]
 
         # State
         self.active_player_name = None   # e.g. "org.mpris.MediaPlayer2.rhythmbox"
@@ -118,7 +122,7 @@ class RS3Daemon:
     # -------------------------------------------------------------------
 
     def _scan_for_players(self):
-        """Look for already-running MPRIS players on the bus."""
+        """Look for already-running MPRIS players on the bus, pick the best by priority."""
         try:
             result = self.bus.call_sync(
                 "org.freedesktop.DBus",
@@ -132,23 +136,49 @@ class RS3Daemon:
                 None
             )
             names, = result.unpack()
+            candidates = []
             for name in names:
                 if name.startswith(MPRIS_PREFIX):
-                    print(bcolors.OKBLUE + "Found player: %s" % name + bcolors.ENDC)
-                    if self._should_attach(name):
-                        self._attach_to_player(name)
-                        return
-            print(bcolors.GREY + "No MPRIS player found yet — waiting..." + bcolors.ENDC)
+                    prio = self._get_priority(name)
+                    print(bcolors.OKBLUE + "Found player: %s (priority: %s)" % (name, prio) + bcolors.ENDC)
+                    if prio >= 0:
+                        candidates.append((prio, name))
+            if candidates:
+                candidates.sort()  # lowest index = highest priority
+                best_name = candidates[0][1]
+                self._attach_to_player(best_name)
+            else:
+                print(bcolors.GREY + "No matching MPRIS player found yet — waiting..." + bcolors.ENDC)
         except Exception as e:
             print(bcolors.WARNING + "Error listing D-Bus names: %s" % str(e) + bcolors.ENDC)
 
+    def _get_priority(self, bus_name):
+        """
+        Return the priority rank of a bus name (lower = higher priority).
+        Returns -1 if the player is not in the priority list.
+        In auto mode (player_priorities is None), everything gets priority 0.
+        """
+        if self.player_priorities is None:
+            return 0  # auto mode: everything is equal priority
+        short = bus_name.replace(MPRIS_PREFIX, '')
+        for i, pattern in enumerate(self.player_priorities):
+            if pattern in short:
+                return i
+        return -1  # not in priority list
+
     def _should_attach(self, bus_name):
-        """Check if we should attach to this player based on config."""
-        if self.active_player_name:
-            return False  # already attached to one
-        if self.target_player == 'auto':
-            return True
-        return bus_name == self.target_player
+        """
+        Check if we should attach to this player based on priority.
+        Returns True if the player is higher priority than the current one
+        (or if no player is currently attached).
+        """
+        new_prio = self._get_priority(bus_name)
+        if new_prio == -1:
+            return False  # not in our priority list
+        if not self.active_player_name:
+            return True   # nothing attached yet
+        cur_prio = self._get_priority(self.active_player_name)
+        return new_prio < cur_prio  # lower index = higher priority
 
     def _on_name_owner_changed(self, conn, sender, path, iface, signal, params, user_data):
         """Called when any D-Bus name appears or disappears."""
@@ -160,6 +190,10 @@ class RS3Daemon:
             # New player appeared
             print(bcolors.OKBLUE + "Player appeared: %s" % name + bcolors.ENDC)
             if self._should_attach(name):
+                if self.active_player_name:
+                    print(bcolors.WARNING + "Switching from %s to higher-priority %s" % (
+                        self.active_player_name, name) + bcolors.ENDC)
+                    self._detach_from_player()
                 self._attach_to_player(name)
 
         elif old_owner and not new_owner:
