@@ -28,6 +28,16 @@ chmod +x install.sh
 
 Then edit `~/.config/rs3/config.ini` with your Last.fm API credentials.
 
+## Update
+
+```bash
+git pull
+./install.sh
+systemctl --user restart rs3
+```
+
+The installer will update the Python scripts but **won't overwrite** your existing `config.ini`, so your API keys and settings are preserved. If a new release adds config options, add them manually to `~/.config/rs3/config.ini`.
+
 ## Usage
 
 ```bash
