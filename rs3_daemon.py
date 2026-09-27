@@ -65,6 +65,10 @@ class RS3Daemon:
         else:
             self.player_priorities = [p.strip() for p in raw.split(',') if p.strip()]
 
+        # Read skip_urls — URL substrings to ignore (services that scrobble natively)
+        skip_raw = S3.config.get('daemon', 'skip_urls', fallback='').strip()
+        self.skip_urls = [s.strip() for s in skip_raw.split(',') if s.strip()]
+
         # State
         self.active_player_name = None   # e.g. "org.mpris.MediaPlayer2.rhythmbox"
         self.player_proxy = None
@@ -368,6 +372,12 @@ class RS3Daemon:
         # Skip local files
         if url.startswith('file://'):
             return
+
+        # Skip URLs from services that scrobble natively (e.g. Spotify)
+        for skip in self.skip_urls:
+            if skip in url:
+                print(bcolors.GREY + "♫ Skipping (native scrobbler): %s [matched: %s]" % (url, skip) + bcolors.ENDC)
+                return
 
         # Determine what changed
         url_changed = (url != self._prev_url) and url
